@@ -22,3 +22,6 @@ Features:
 - Delete confirmation dialog
 - Stats view with total players, average PPG, and position counts
 - Data persists after browser refresh
+
+Demo:
+https://www.loom.com/share/9ef08f7f68804091a0fd9475236cba97

@@ -1,4 +1,7 @@
-let players = [];
+const API_URL = '/api';
+let currentPage = 1;
+const PAGE_SIZE = 10;
+let totalPages = 1;
 let editingId = null;
 
 const tableBody = document.getElementById("player-table");
@@ -14,57 +17,37 @@ const form = document.getElementById("player-form");
 const formTitle = document.getElementById("form-title");
 const formError = document.getElementById("form-error");
 
-function seedData() {
-  return [
-    { id: 1, name: "LeBron James", team: "Lakers", position: "SF", ppg: 27.1, years: 23 },
-    { id: 2, name: "Stephen Curry", team: "Warriors", position: "PG", ppg: 24.5, years: 17 },
-    { id: 3, name: "Kevin Durant", team: "Rockets", position: "SF", ppg: 27.3, years: 18 },
-    { id: 4, name: "Giannis Antetokounmpo", team: "Bucks", position: "PF", ppg: 29.8, years: 13 },
-    { id: 5, name: "Nikola Jokic", team: "Nuggets", position: "C", ppg: 26.4, years: 11 },
-    { id: 6, name: "Luka Doncic", team: "Lakers", position: "PG", ppg: 28.7, years: 8 },
-    { id: 7, name: "Joel Embiid", team: "76ers", position: "C", ppg: 30.1, years: 11 },
-    { id: 8, name: "Jayson Tatum", team: "Celtics", position: "SF", ppg: 26.9, years: 9 },
-    { id: 9, name: "Damian Lillard", team: "Trailblazers", position: "PG", ppg: 25.1, years: 14 },
-    { id: 10, name: "Jimmy Butler", team: "Warriors", position: "SF", ppg: 22.3, years: 15 },
-    { id: 11, name: "Kawhi Leonard", team: "Clippers", position: "SF", ppg: 24.8, years: 14 },
-    { id: 12, name: "Devin Booker", team: "Suns", position: "SG", ppg: 27.1, years: 10 },
-    { id: 13, name: "Anthony Davis", team: "Mavericks", position: "PF", ppg: 24.2, years: 13 },
-    { id: 14, name: "Ja Morant", team: "Grizzlies", position: "PG", ppg: 26.1, years: 7 },
-    { id: 15, name: "Zion Williamson", team: "Pelicans", position: "PF", ppg: 25.0, years: 6 },
-    { id: 16, name: "Trae Young", team: "Wizards", position: "PG", ppg: 25.5, years: 8 },
-    { id: 17, name: "Paul George", team: "Clippers", position: "SG", ppg: 23.8, years: 15 },
-    { id: 18, name: "Bradley Beal", team: "Clippers", position: "SG", ppg: 22.5, years: 13 },
-    { id: 19, name: "Donovan Mitchell", team: "Cavaliers", position: "SG", ppg: 27.6, years: 9 },
-    { id: 20, name: "Bam Adebayo", team: "Heat", position: "C", ppg: 20.4, years: 9 },
-    { id: 21, name: "Jamal Murray", team: "Nuggets", position: "PG", ppg: 20.0, years: 9 },
-    { id: 22, name: "Shai Gilgeous-Alexander", team: "Thunder", position: "SG", ppg: 30.1, years: 8 },
-    { id: 23, name: "De'Aaron Fox", team: "Spurs", position: "PG", ppg: 25.2, years: 9 },
-    { id: 24, name: "Jaren Jackson Jr.", team: "Grizzlies", position: "PF", ppg: 22.4, years: 8 },
-    { id: 25, name: "Jrue Holiday", team: "Trailblazers", position: "PG", ppg: 18.5, years: 15 },
-    { id: 26, name: "Karl-Anthony Towns", team: "Knicks", position: "C", ppg: 23.1, years: 11 },
-    { id: 27, name: "Anthony Edwards", team: "Timberwolves", position: "SG", ppg: 26.0, years: 6 },
-    { id: 28, name: "Pascal Siakam", team: "Pacers", position: "PF", ppg: 22.0, years: 10 },
-    { id: 29, name: "Domantas Sabonis", team: "Kings", position: "C", ppg: 19.4, years: 11 },
-    { id: 30, name: "Tyrese Haliburton", team: "Pacers", position: "PG", ppg: 20.1, years: 6 }
-  ];
-}
+const paginationContainer = document.getElementById("pagination");
+const prevButton = document.getElementById("prev-page");
+const nextButton = document.getElementById("next-page");
+const pageInfo = document.getElementById("page-info");
 
-function loadPlayers() {
-  const stored = localStorage.getItem("nbaPlayers");
-  if (stored) {
-    players = JSON.parse(stored);
-  } else {
-    players = seedData();
-    localStorage.setItem("nbaPlayers", JSON.stringify(players));
+// Fetch players from API with pagination
+async function fetchPlayers(page = 1) {
+  try {
+    const response = await fetch(`${API_URL}/players?page=${page}&page_size=${PAGE_SIZE}`);
+    const data = await response.json();
+    
+    currentPage = data.page;
+    totalPages = data.total_pages;
+    
+    renderTable(data.players);
+    updatePagination();
+  } catch (error) {
+    console.error('Error fetching players:', error);
+    alert('Failed to load players. Please try again.');
   }
 }
 
-function savePlayers() {
-  localStorage.setItem("nbaPlayers", JSON.stringify(players));
-}
-
-function renderTable() {
+// Render table with player data
+function renderTable(players) {
   tableBody.innerHTML = "";
+  
+  if (players.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="6">No players found</td></tr>';
+    return;
+  }
+  
   players.forEach(player => {
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -74,13 +57,33 @@ function renderTable() {
       <td>${player.ppg}</td>
       <td>${player.years}</td>
       <td>
-        <button id = "editBtn" onclick="editPlayer(${player.id})">Edit</button>
-        <button id="deleteBtn" onclick="deletePlayer(${player.id})">Delete</button>
+        <button class="edit-btn" onclick="editPlayer(${player.id})">Edit</button>
+        <button class="delete-btn" onclick="deletePlayer(${player.id})">Delete</button>
       </td>
     `;
     tableBody.appendChild(row);
   });
 }
+
+// Update pagination controls
+function updatePagination() {
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+  prevButton.disabled = currentPage === 1;
+  nextButton.disabled = currentPage === totalPages;
+}
+
+// Pagination handlers
+prevButton.onclick = () => {
+  if (currentPage > 1) {
+    fetchPlayers(currentPage - 1);
+  }
+};
+
+nextButton.onclick = () => {
+  if (currentPage < totalPages) {
+    fetchPlayers(currentPage + 1);
+  }
+};
 
 // Shows one view at a time
 function showView(view) {
@@ -90,7 +93,11 @@ function showView(view) {
   view.classList.remove("hidden");
 }
 
-navList.onclick = () => showView(listView);
+// Navigation handlers
+navList.onclick = () => {
+  fetchPlayers(currentPage);
+  showView(listView);
+};
 
 navAdd.onclick = () => {
   form.reset();
@@ -100,13 +107,13 @@ navAdd.onclick = () => {
   showView(formView);
 };
 
-// Open stats view and recalculates stats
-navStats.onclick = () => {
-  renderStats();
+navStats.onclick = async () => {
+  await renderStats();
   showView(statsView);
 };
 
-form.onsubmit = function (e) {
+// Form submit handler
+form.onsubmit = async function (e) {
   e.preventDefault();
 
   const name = document.getElementById("name").value.trim();
@@ -115,6 +122,7 @@ form.onsubmit = function (e) {
   const ppg = parseFloat(document.getElementById("ppg").value);
   const years = parseInt(document.getElementById("years").value);
 
+  // Client-side validation
   if (!name || !team || isNaN(ppg) || isNaN(years)) {
     formError.textContent = "All fields are required.";
     return;
@@ -125,78 +133,137 @@ form.onsubmit = function (e) {
     return;
   }
 
-  if (editingId) {
-    const player = players.find(p => p.id === editingId);
-    player.name = name;
-    player.team = team;
-    player.position = position;
-    player.ppg = ppg;
-    player.years = years;
-  } else {
-    const newPlayer = {
-      id: Date.now(),
-      name,
-      team,
-      position,
-      ppg,
-      years
-    };
-    players.push(newPlayer);
-  }
+  const playerData = {
+    name,
+    team,
+    position,
+    ppg,
+    years
+  };
 
-  savePlayers();
-  renderTable();
-  showView(listView);
+  try {
+    let response;
+    
+    if (editingId) {
+      // Update existing player
+      response = await fetch(`${API_URL}/players/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(playerData)
+      });
+    } else {
+      // Create new player
+      response = await fetch(`${API_URL}/players`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(playerData)
+      });
+    }
+
+    if (!response.ok) {
+      const error = await response.json();
+      formError.textContent = error.error || 'Failed to save player';
+      return;
+    }
+
+    // Success - return to list view
+    await fetchPlayers(editingId ? currentPage : 1);
+    showView(listView);
+    form.reset();
+    editingId = null;
+    
+  } catch (error) {
+    console.error('Error saving player:', error);
+    formError.textContent = 'Failed to save player. Please try again.';
+  }
 };
 
-// Loads selected player data into the form for editing
-function editPlayer(id) {
-  const player = players.find(p => p.id === id);
-  document.getElementById("name").value = player.name;
-  document.getElementById("team").value = player.team;
-  document.getElementById("position").value = player.position;
-  document.getElementById("ppg").value = player.ppg;
-  document.getElementById("years").value = player.years;
-  editingId = id;
-  formTitle.textContent = "Edit Player";
-  formError.textContent = "";
-  showView(formView);
-}
-
-
-// Delete function
-function deletePlayer(id) {
-  if (confirm("Are you sure you want to delete this player?")) {
-    players = players.filter(p => p.id !== id);
-    savePlayers();
-    renderTable();
+// Edit player - load data into form
+async function editPlayer(id) {
+  try {
+    const response = await fetch(`${API_URL}/players/${id}`);
+    
+    if (!response.ok) {
+      alert('Failed to load player data');
+      return;
+    }
+    
+    const player = await response.json();
+    
+    document.getElementById("name").value = player.name;
+    document.getElementById("team").value = player.team;
+    document.getElementById("position").value = player.position;
+    document.getElementById("ppg").value = player.ppg;
+    document.getElementById("years").value = player.years;
+    
+    editingId = id;
+    formTitle.textContent = "Edit Player";
+    formError.textContent = "";
+    showView(formView);
+    
+  } catch (error) {
+    console.error('Error editing player:', error);
+    alert('Failed to load player data. Please try again.');
   }
 }
 
-// Stats render
-function renderStats() {
-  document.getElementById("total-players").textContent =
-    "Total Players: " + players.length;
+// Delete player with confirmation
+async function deletePlayer(id) {
+  if (!confirm("Are you sure you want to delete this player?")) {
+    return;
+  }
 
-  const avg = (players.reduce((sum, p) => sum + p.ppg, 0) / players.length).toFixed(2);
-  document.getElementById("avg-ppg").textContent =
-    "Average PPG: " + avg;
+  try {
+    const response = await fetch(`${API_URL}/players/${id}`, {
+      method: 'DELETE'
+    });
 
-  const counts = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 };
-  players.forEach(p => counts[p.position]++);
+    if (!response.ok) {
+      alert('Failed to delete player');
+      return;
+    }
 
-  document.getElementById("position-counts").innerHTML =
-    "Players by Position:<br>" +
-    `PG: ${counts.PG}<br>` +
-    `SG: ${counts.SG}<br>` +
-    `SF: ${counts.SF}<br>` +
-    `PF: ${counts.PF}<br>` +
-    `C: ${counts.C}`;
+    // Refresh the current page, or go to previous page if current is now empty
+    await fetchPlayers(currentPage);
+    
+  } catch (error) {
+    console.error('Error deleting player:', error);
+    alert('Failed to delete player. Please try again.');
+  }
+}
 
-  const avgYears = (players.reduce((sum, p) => sum + p.years, 0) / players.length).toFixed(2);
-  document.getElementById("avg-years").textContent = "Average Years: " + avgYears;
+// Render statistics
+async function renderStats() {
+  try {
+    const response = await fetch(`${API_URL}/stats`);
+    const stats = await response.json();
+
+    document.getElementById("total-players").textContent =
+      "Total Players: " + stats.total_players;
+
+    document.getElementById("avg-ppg").textContent =
+      "Average PPG: " + stats.avg_ppg;
+
+    document.getElementById("position-counts").innerHTML =
+      "Players by Position:<br>" +
+      `PG: ${stats.position_counts.PG}<br>` +
+      `SG: ${stats.position_counts.SG}<br>` +
+      `SF: ${stats.position_counts.SF}<br>` +
+      `PF: ${stats.position_counts.PF}<br>` +
+      `C: ${stats.position_counts.C}`;
+
+    document.getElementById("avg-years").textContent = 
+      "Average Years: " + stats.avg_years;
+      
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    alert('Failed to load statistics. Please try again.');
+  }
 }
 
 // Initial app load
-loadPlayers();
-renderTable();
+fetchPlayers(1);

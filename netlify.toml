@@ -1,0 +1,8 @@
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/api/*"
+  to = "/api/index.php"
+  status = 200
+  force = true

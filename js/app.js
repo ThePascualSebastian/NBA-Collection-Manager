@@ -1,4 +1,4 @@
-const API_URL = '/api';
+const API_URL = '/.netlify/functions/proxyPlayers';
 let currentPage = 1;
 const PAGE_SIZE = 10;
 let totalPages = 1;

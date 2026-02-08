@@ -1,7 +1,4 @@
-import fetch from "node-fetch";
-
 export async function handler(event, context) {
-  // Build the target InfinityFree URL
   // Remove the function prefix from the path
   const path = event.path.replace("/.netlify/functions/proxyPlayers", "");
   const query = event.queryStringParameters
@@ -10,8 +7,8 @@ export async function handler(event, context) {
   const url = `https://nba-collection-manager.infinityfreeapp.com/api${path}${query}`;
 
   try {
-    const response = await fetch(url);
-    const data = await response.text(); // Use text first
+    const response = await fetch(url); // native fetch
+    const data = await response.text(); // get text first
     return {
       statusCode: response.status,
       headers: {

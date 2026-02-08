@@ -1,22 +1,29 @@
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
 export async function handler(event, context) {
-  const url = 'https://nba-collection-manager.infinityfreeapp.com/api' + (event.path.replace('/.netlify/functions/proxyPlayers', '') || '');
-  
+  // Build the target InfinityFree URL
+  // Remove the function prefix from the path
+  const path = event.path.replace("/.netlify/functions/proxyPlayers", "");
+  const query = event.queryStringParameters
+    ? "?" + new URLSearchParams(event.queryStringParameters)
+    : "";
+  const url = `https://nba-collection-manager.infinityfreeapp.com/api${path}${query}`;
+
   try {
-    const res = await fetch(url + (event.queryStringParameters ? '?' + new URLSearchParams(event.queryStringParameters) : ''));
-    const data = await res.text(); // use text first to avoid JSON errors
+    const response = await fetch(url);
+    const data = await response.text(); // Use text first
     return {
-      statusCode: 200,
+      statusCode: response.status,
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
       },
-      body: data
+      body: data,
     };
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to fetch API' })
+      body: JSON.stringify({ error: "Failed to fetch API", details: err.message }),
     };
   }
 }

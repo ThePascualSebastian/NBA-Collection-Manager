@@ -3,6 +3,6 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "/api/index.php"
+  to = "https://nba-collection-manager.infinityfreeapp.com/api/:splat"
   status = 200
   force = true

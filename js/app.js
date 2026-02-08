@@ -1,4 +1,4 @@
-const API_URL = '/api';
+const API_URL = 'https://nba-collection-manager.infinityfreeapp.com/api';
 
 let currentPage = 1;
 const PAGE_SIZE = 10;

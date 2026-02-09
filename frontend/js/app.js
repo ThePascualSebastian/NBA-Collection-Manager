@@ -1,7 +1,4 @@
-// Detect environment and set API URL accordingly
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost/nba-collection-manager/backend/index.php'
-  : 'http://localhost/nba-collection-manager/backend/index.php'; // Keep localhost for local testing
+const API_URL = 'https://nba-collection-manager.infinityfreeapp.com/api/index.php';
 
 let currentPage = 1;
 const PAGE_SIZE = 10;

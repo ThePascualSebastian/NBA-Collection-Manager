@@ -1,4 +1,7 @@
-const API_URL = 'https://nba-collection-manager.infinityfreeapp.com/api';
+// Detect environment and set API URL accordingly
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost/nba-collection-manager/backend/index.php'
+  : 'http://localhost/nba-collection-manager/backend/index.php'; // Keep localhost for local testing
 
 let currentPage = 1;
 const PAGE_SIZE = 10;
@@ -36,8 +39,24 @@ async function fetchPlayers(page = 1) {
     updatePagination();
   } catch (error) {
     console.error('Error fetching players:', error);
-    alert('Failed to load players. Please try again.');
+    showConnectionError();
   }
+}
+
+// Show connection error message
+function showConnectionError() {
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="6" style="padding: 20px; color: #dc3545;">
+        <strong>Unable to connect to backend API</strong><br><br>
+        Please make sure:<br>
+        1. XAMPP is running<br>
+        2. Apache server is started<br>
+        3. Backend files are in the correct directory<br>
+        4. API URL is: ${API_URL}
+      </td>
+    </tr>
+  `;
 }
 
 // Render table with player data
@@ -179,7 +198,7 @@ form.onsubmit = async function (e) {
     
   } catch (error) {
     console.error('Error saving player:', error);
-    formError.textContent = 'Failed to save player. Please try again.';
+    formError.textContent = 'Failed to save player. Network error - is your backend running?';
   }
 };
 
@@ -208,7 +227,7 @@ async function editPlayer(id) {
     
   } catch (error) {
     console.error('Error editing player:', error);
-    alert('Failed to load player data. Please try again.');
+    alert('Failed to load player data. Network error - is your backend running?');
   }
 }
 
@@ -233,7 +252,7 @@ async function deletePlayer(id) {
     
   } catch (error) {
     console.error('Error deleting player:', error);
-    alert('Failed to delete player. Please try again.');
+    alert('Failed to delete player. Network error - is your backend running?');
   }
 }
 
@@ -262,7 +281,8 @@ async function renderStats() {
       
   } catch (error) {
     console.error('Error fetching stats:', error);
-    alert('Failed to load statistics. Please try again.');
+    document.getElementById("total-players").textContent = 
+      "Unable to load statistics. Network error - is your backend running?";
   }
 }
 

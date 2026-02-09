@@ -1,3 +1,4 @@
+// API URL - update this to your actual InfinityFree URL
 const API_URL = 'https://nba-collection-manager.infinityfreeapp.com/api/index.php';
 
 let currentPage = 1;
@@ -26,7 +27,12 @@ const pageInfo = document.getElementById("page-info");
 // Fetch players from API with pagination
 async function fetchPlayers(page = 1) {
   try {
-    const response = await fetch(`${API_URL}/players?page=${page}&page_size=${PAGE_SIZE}`);
+    const response = await fetch(`${API_URL}?action=list&page=${page}&page_size=${PAGE_SIZE}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const data = await response.json();
     
     currentPage = data.page;
@@ -36,21 +42,22 @@ async function fetchPlayers(page = 1) {
     updatePagination();
   } catch (error) {
     console.error('Error fetching players:', error);
-    showConnectionError();
+    showConnectionError(error.message);
   }
 }
 
 // Show connection error message
-function showConnectionError() {
+function showConnectionError(message) {
   tableBody.innerHTML = `
     <tr>
       <td colspan="6" style="padding: 20px; color: #dc3545;">
         <strong>Unable to connect to backend API</strong><br><br>
-        Please make sure:<br>
-        1. XAMPP is running<br>
-        2. Apache server is started<br>
-        3. Backend files are in the correct directory<br>
-        4. API URL is: ${API_URL}
+        Error: ${message}<br><br>
+        Please check:<br>
+        1. API URL is correct in app.js<br>
+        2. Backend server is running<br>
+        3. CORS is properly configured<br>
+        4. Current API URL: ${API_URL}
       </td>
     </tr>
   `;
@@ -163,7 +170,7 @@ form.onsubmit = async function (e) {
     
     if (editingId) {
       // Update existing player
-      response = await fetch(`${API_URL}/players/${editingId}`, {
+      response = await fetch(`${API_URL}?action=update&id=${editingId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -172,7 +179,7 @@ form.onsubmit = async function (e) {
       });
     } else {
       // Create new player
-      response = await fetch(`${API_URL}/players`, {
+      response = await fetch(`${API_URL}?action=create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -195,14 +202,14 @@ form.onsubmit = async function (e) {
     
   } catch (error) {
     console.error('Error saving player:', error);
-    formError.textContent = 'Failed to save player. Network error - is your backend running?';
+    formError.textContent = 'Failed to save player. Please check your connection.';
   }
 };
 
 // Edit player - load data into form
 async function editPlayer(id) {
   try {
-    const response = await fetch(`${API_URL}/players/${id}`);
+    const response = await fetch(`${API_URL}?action=get&id=${id}`);
     
     if (!response.ok) {
       alert('Failed to load player data');
@@ -224,7 +231,7 @@ async function editPlayer(id) {
     
   } catch (error) {
     console.error('Error editing player:', error);
-    alert('Failed to load player data. Network error - is your backend running?');
+    alert('Failed to load player data. Please try again.');
   }
 }
 
@@ -235,7 +242,7 @@ async function deletePlayer(id) {
   }
 
   try {
-    const response = await fetch(`${API_URL}/players/${id}`, {
+    const response = await fetch(`${API_URL}?action=delete&id=${id}`, {
       method: 'DELETE'
     });
 
@@ -244,19 +251,24 @@ async function deletePlayer(id) {
       return;
     }
 
-    // Refresh the current page, or go to previous page if current is now empty
+    // Refresh the current page
     await fetchPlayers(currentPage);
     
   } catch (error) {
     console.error('Error deleting player:', error);
-    alert('Failed to delete player. Network error - is your backend running?');
+    alert('Failed to delete player. Please try again.');
   }
 }
 
 // Render statistics
 async function renderStats() {
   try {
-    const response = await fetch(`${API_URL}/stats`);
+    const response = await fetch(`${API_URL}?action=stats`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch stats');
+    }
+    
     const stats = await response.json();
 
     document.getElementById("total-players").textContent =
@@ -279,7 +291,7 @@ async function renderStats() {
   } catch (error) {
     console.error('Error fetching stats:', error);
     document.getElementById("total-players").textContent = 
-      "Unable to load statistics. Network error - is your backend running?";
+      "Unable to load statistics. Please check your connection.";
   }
 }
 
